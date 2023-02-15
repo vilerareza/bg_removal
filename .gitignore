@@ -1,0 +1,6 @@
+models/
+training/checkpoints/
+training/results/
+images/
+ex_files/
+env/
