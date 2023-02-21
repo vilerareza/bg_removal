@@ -1,3 +1,7 @@
+'''
+Retrain the existing u2net.onnx
+'''
+
 import time
 import cv2 as cv
 import numpy as np
@@ -16,28 +20,39 @@ from onnx2torch import convert
 from transform import transform
 from dataset import CarDataset
 
-n_epochs = 3
+# Number of training epochs
+n_epochs = 1
+# Training batch size
 batch_size = 5
+# Validation batch size
 batch_size_val = 1
+# Path to dataset folder
 dataset_path = '../images/dataset_test/'
+# Path to test image for evaluating model performance on every epoch
+test_img = 'path/to/test/image.jpg'
+# Path to folder for saving the inference test result using test iage
 result_path = 'result/'
+# Path to folder for saving the model chackpoints during training
 checkpoints_path = 'checkpoints/'
+# Path to origin u2net onnx model
 model_path = '../models/u2net.onnx'
+# Loss function
 bce_loss = nn.BCELoss(size_average=True)
 
 
 def train_loop(epoch, n_epochs, data_loader, model, loss_func, optimizer):
-
+    '''Training loop to perform on every epoch'''
+    # n of images in dataset
     size = len(data_loader.dataset)
 
     for batch, (x, y) in enumerate(data_loader):
-
+        
+        # Batch start time
         t_start = time.time()
 
+        # Tensor preparation
         x = x.type(torch.FloatTensor)
         y = y.type(torch.FloatTensor)
-
-        # wrap them in Variable
         if torch.cuda.is_available():
             x_var, y_var = Variable(x.cuda(), requires_grad=False), Variable(y.cuda(), requires_grad=False)
         else:
@@ -52,6 +67,7 @@ def train_loop(epoch, n_epochs, data_loader, model, loss_func, optimizer):
         loss.backward()
         optimizer.step()
 
+        # Batch end time
         t_end = time.time()
 
         loss = loss.item()
@@ -135,7 +151,6 @@ def muti_bce_loss_fusion(d0, d1, d2, d3, d4, d5, d6, labels_v):
     loss4 = bce_loss(d4,labels_v)
     loss5 = bce_loss(d5,labels_v)
     loss6 = bce_loss(d6,labels_v)
-
     loss = loss0 + loss1 + loss2 + loss3 + loss4 + loss5 + loss6
     #print("l0: %3f, l1: %3f, l2: %3f, l3: %3f, l4: %3f, l5: %3f, l6: %3f\n"%(loss0.data.item(),loss1.data.item(),loss2.data.item(),loss3.data.item(),loss4.data.item(),loss5.data.item(),loss6.data.item()))
     
@@ -146,12 +161,13 @@ def start_train():
     # Model conversion and loading
     onnx_model = onnx.load(model_path)
     rembg_model = convert(onnx_model)
+    rembg_model.load_state_dict(torch.load('checkpoints/u2net_state_160223.pth'))
     # Determine the device
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     rembg_model = rembg_model.to(device)
 
     # Optimizer
-    optimizer = torch.optim.Adam(rembg_model.parameters(), lr=1e-4)
+    optimizer = torch.optim.Adam(rembg_model.parameters(), lr=1e-5)
     
     # Metric
     criterion = muti_bce_loss_fusion
@@ -164,7 +180,7 @@ def start_train():
     valid_loader = DataLoader(valid_data, batch_size=batch_size, shuffle=False)
 
     '''Data loader verification'''
-    # imgs, masks = next(iter(train_loader))
+    #imgs, masks = next(iter(train_loader))
     # print(f"Img batch shape: {imgs.size()}")
     # print(f"Mask batch shape: {masks.size()}")
     # img = imgs[0].squeeze()
@@ -188,10 +204,10 @@ def start_train():
         # Validation
         test_loop(valid_loader, rembg_model, criterion, accuracyMetric)
         # Save the checkpoint
-        torch.save(rembg_model.state_dict(), f'{checkpoints_path}/model_check_{epoch}.pth')
+        torch.save(rembg_model.state_dict(), f'{checkpoints_path}/model_check_210223_{epoch}.pth')
         rembg_model.train()  # resume train
         # Inference test
-        test_inference('../images/1_2.jpg', rembg_model, f'results/test_{epoch}.jpg')
+        # test_inference(test_img, rembg_model, f'results/test_{epoch}.jpg')
 
 if __name__ == "__main__":
     start_train()

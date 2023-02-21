@@ -11,11 +11,11 @@ from skimage import morphology as morph
 from matplotlib import pyplot as plt
 
 # Directory containing original image with removed bg
-dir_car_no_bg = 'images/dataset_test/nobg/'
+dir_car_no_bg = 'images/studio/nobg/'
 # Path to directory for resulted car mask image 
-dir_car_mask = 'images/dataset_test/mask_car/'
+dir_car_mask = 'images/studio/mask_car/'
 # Path to directory for resulted car mask (without window) image 
-dir_car_mask_no_win = 'images/dataset_test/mask_car_no_win/'
+dir_car_mask_no_win = 'images/studio/mask_car_no_win/'
 
 files = os.listdir(dir_car_no_bg)
 
@@ -44,7 +44,7 @@ for file in files:
     # mask car np window
     mask_car_no_win = np.zeros(img.shape[0:2]).astype(np.uint8)
     cts, _ = cv.findContours(mask_car, mode = cv.RETR_EXTERNAL, method = cv.CHAIN_APPROX_NONE)
-    areas, lcts = get_large_contours(cts, 5000)
+    areas, lcts = get_large_contours(cts, 2000)
     mask_car_no_win = cv.fillPoly(mask_car_no_win, [lcts[0]], 255)
     cv.imwrite(f'{dir_car_mask_no_win}/{file}', mask_car_no_win)
 

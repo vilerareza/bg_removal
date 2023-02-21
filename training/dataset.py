@@ -17,8 +17,8 @@ class CarDataset(Dataset):
         self.transform = transform_func
         self.train = train
         if self.train:
-            self.img_names = self.img_names[: int(len(self.img_names) * 0.9)]
-            #self.img_names = self.img_names[:10]
+            self.img_names = self.img_names[:int(len(self.img_names) * 0.9)]
+            #self.img_names = self.img_names[:20]
         else:
             self.img_names = self.img_names[int(len(self.img_names) * 0.9):]
             #self.img_names = self.img_names[10:15]
